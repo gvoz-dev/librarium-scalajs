@@ -1,0 +1,20 @@
+{
+  "name": "libra",
+  "private": true,
+  "version": "0.0.1",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "@scala-js/vite-plugin-scalajs": "^1.0.0",
+    "@types/chart.js": "^2.9.41",
+    "typescript": "^5.4.5",
+    "vite": "^5.3.1"
+  },
+  "dependencies": {
+    "chart.js": "^4.4.3"
+  }
+}

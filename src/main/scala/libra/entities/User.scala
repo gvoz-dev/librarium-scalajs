@@ -1,5 +1,8 @@
 package libra.entities
 
+import io.circe.*
+import io.circe.generic.semiauto.*
+
 import java.util.UUID
 
 /** Сущность "Пользователь".
@@ -19,15 +22,12 @@ final case class User(
     id: Option[UUID],
     name: String,
     email: String,
-    password: String,
+    password: Option[String],
     role: String = "user"
 )
 
 object User:
 
-  import io.circe.*
-  import io.circe.generic.semiauto.*
-
-  given Decoder[User] = deriveDecoder[User]
+  given Codec[User] = deriveCodec
 
 end User

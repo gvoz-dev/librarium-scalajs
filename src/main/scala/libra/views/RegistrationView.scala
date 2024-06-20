@@ -3,16 +3,17 @@ package libra.views
 import com.raquo.laminar.api.L.{*, given}
 import libra.App.given
 import libra.backendApiUrl
+import libra.entities.User
 import libra.http.{*, given}
 import org.scalajs.dom
 
 import scala.concurrent.*
 
-/** Страница входа в приложение. */
-case class LoginView() extends View:
+case class RegistrationView() extends View:
 
   private val httpClient = HttpClient()
-  private val loginApiUrl = backendApiUrl + "/login"
+  private val url = backendApiUrl + "/registration"
+  private val nameVar: Var[String] = Var("")
   private val emailVar: Var[String] = Var("")
   private val passwordVar: Var[String] = Var("")
 
@@ -23,10 +24,20 @@ case class LoginView() extends View:
       div(
         cls := "block-user",
         h1("Librarium"),
-        h2("Вход"),
+        h2("Регистрация"),
+        renderNameInput,
         renderEmailInput,
         renderPasswordInput,
         renderEnterButton
+      )
+    )
+
+  private def renderNameInput: HtmlElement =
+    div(
+      input(
+        cls := "input input-user",
+        placeholder("Имя"),
+        onInput.mapToValue --> nameVar
       )
     )
 
@@ -54,13 +65,15 @@ case class LoginView() extends View:
       button(
         cls := "button button-user",
         typ := "submit",
-        "Вход",
+        "Зарегистрироваться",
         onClick
-          .mapTo(Credentials(emailVar.now(), passwordVar.now()))
-          .flatMap(credentials =>
-            if credentials.isValid then
+          .mapTo(
+            User(None, nameVar.now(), emailVar.now(), Some(passwordVar.now()))
+          )
+          .flatMap(user =>
+            if true then
               EventStream.fromFuture(
-                httpClient.post[Credentials, Token](loginApiUrl, credentials)
+                httpClient.post[User, User](url, user)
               )
             else
               EventStream.fromFuture(
@@ -79,4 +92,4 @@ case class LoginView() extends View:
       )
     )
 
-end LoginView
+end RegistrationView

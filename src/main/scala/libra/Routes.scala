@@ -7,7 +7,12 @@ import io.circe.syntax.*
 import libra.Pages.*
 import libra.views.*
 
+import scala.concurrent.ExecutionContext
+import scala.scalajs.concurrent.JSExecutionContext
+
 object Routes:
+
+  given ExecutionContext = JSExecutionContext.queue
 
   private val appRoot = root
 

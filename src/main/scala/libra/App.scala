@@ -5,13 +5,8 @@ import libra.Pages.*
 import libra.Routes.*
 import org.scalajs.dom
 
-import scala.concurrent.ExecutionContext
-import scala.scalajs.concurrent.JSExecutionContext
-
 /** Точка входа в приложение. */
 object App:
-
-  given ExecutionContext = JSExecutionContext.queue
 
   private val app: HtmlElement =
     div(

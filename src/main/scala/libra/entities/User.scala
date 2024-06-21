@@ -2,6 +2,7 @@ package libra.entities
 
 import io.circe.*
 import io.circe.generic.semiauto.*
+import libra.utils.Validators
 
 import java.util.UUID
 
@@ -24,7 +25,14 @@ final case class User(
     email: String,
     password: Option[String],
     role: String = "user"
-)
+):
+
+  /** Произвести валидацию данных пользователя. */
+  def isValid: Boolean =
+    name.nonEmpty && password.exists(_.nonEmpty) && role.nonEmpty
+      && email.nonEmpty && Validators.validateEmail(email)
+
+end User
 
 object User:
 

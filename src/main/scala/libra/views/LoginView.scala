@@ -1,22 +1,20 @@
 package libra.views
 
 import com.raquo.laminar.api.L.{*, given}
-import libra.App.given
 import libra.backendApiUrl
-import libra.http.{*, given}
+import libra.entities.{*, given}
+import libra.http.HttpClient
 import org.scalajs.dom
 
 import scala.concurrent.*
 
-/** Страница входа в приложение. */
-case class LoginView() extends View:
+case class LoginView()(using ExecutionContext) extends View:
 
   private val httpClient = HttpClient()
   private val loginApiUrl = backendApiUrl + "/login"
   private val emailVar: Var[String] = Var("")
   private val passwordVar: Var[String] = Var("")
 
-  /** Рендер страницы входа в приложение. */
   override def render: HtmlElement =
     div(
       cls := "container",

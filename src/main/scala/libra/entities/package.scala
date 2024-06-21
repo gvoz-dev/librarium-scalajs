@@ -2,17 +2,9 @@ package libra
 
 import io.circe.*
 import io.circe.generic.semiauto.*
+import libra.utils.Validators
 
-package object http:
-
-  /** Тело HTTP-ответа с ошибкой.
-    *
-    * @param message
-    *   сообщение
-    */
-  final case class ResponseError(message: String) extends Throwable(message)
-
-  given Decoder[ResponseError] = deriveDecoder[ResponseError]
+package object entities:
 
   /** Учётные данные пользователя.
     *
@@ -23,9 +15,9 @@ package object http:
     */
   final case class Credentials(email: String, password: String):
 
-    /** Учётные данные пользователя валидны. */
+    /** Произвести валидацию учётных данных пользователя. */
     def isValid: Boolean =
-      email.nonEmpty && email.contains('@') && password.nonEmpty
+      email.nonEmpty && Validators.validateEmail(email) && password.nonEmpty
 
   end Credentials
 
@@ -40,4 +32,4 @@ package object http:
 
   given Decoder[Token] = deriveDecoder[Token]
 
-end http
+end entities

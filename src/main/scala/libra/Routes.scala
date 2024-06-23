@@ -17,25 +17,30 @@ object Routes:
   private val appRoot = root
 
   private val routes = List(
+    Route.static(HomePage(), appRoot / endOfSegments),
     Route.static(LoginPage(), appRoot / "login" / endOfSegments),
-    Route.static(RegistrationPage(), appRoot / "registration" / endOfSegments)
+    Route.static(RegistrationPage(), appRoot / "registration" / endOfSegments),
+    Route.static(AuthorsPage(), appRoot / "authors" / endOfSegments)
   )
 
-  val router = new Router[Page](
-    routes = routes,
-    getPageTitle = _.title,
-    serializePage = _.asJson.toString,
-    deserializePage = decode[Page](_).getOrElse(NotFoundPage()),
-    routeFallback = _ => NotFoundPage()
-  )(
-    popStateEvents = windowEvents(_.onPopState),
-    owner = unsafeWindowOwner
-  )
+  val router: Router[Page] =
+    new Router[Page](
+      routes = routes,
+      getPageTitle = _.title,
+      serializePage = _.asJson.toString,
+      deserializePage = decode[Page](_).getOrElse(NotFoundPage()),
+      routeFallback = _ => NotFoundPage()
+    )(
+      popStateEvents = windowEvents(_.onPopState),
+      owner = unsafeWindowOwner
+    )
 
-  def renderPage(page: Page): HtmlElement =
-    page match
-      case LoginPage()        => LoginView().render
-      case RegistrationPage() => RegistrationView().render
-      case _                  => NotFoundView().render
+  val views: SplitRender[Page, HtmlElement] =
+    SplitRender(router.currentPageSignal)
+      .collectStatic(HomePage())(HomeView().render)
+      .collectStatic(LoginPage())(LoginView().render)
+      .collectStatic(RegistrationPage())(RegistrationView().render)
+      .collectStatic(AuthorsPage())(AuthorsView().render)
+      .collectStatic(NotFoundPage())(NotFoundView().render)
 
 end Routes

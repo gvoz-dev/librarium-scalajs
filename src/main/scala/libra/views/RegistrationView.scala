@@ -1,6 +1,8 @@
 package libra.views
 
 import com.raquo.laminar.api.L.{*, given}
+import libra.Pages.*
+import libra.Routes.*
 import libra.entities.{*, given}
 import libra.http.HttpClient
 import org.scalajs.dom
@@ -19,7 +21,7 @@ case class RegistrationView()(using ExecutionContext) extends View:
     div(
       cls := "container",
       div(
-        cls := "block-user",
+        cls := "block-login",
         h1("Librarium"),
         h2("Регистрация"),
         renderNameInput,
@@ -32,7 +34,7 @@ case class RegistrationView()(using ExecutionContext) extends View:
   private def renderNameInput: HtmlElement =
     div(
       input(
-        cls := "input input-user",
+        cls := "input input-login",
         placeholder("Имя"),
         onInput.mapToValue --> nameVar
       )
@@ -41,7 +43,7 @@ case class RegistrationView()(using ExecutionContext) extends View:
   private def renderEmailInput: HtmlElement =
     div(
       input(
-        cls := "input input-user",
+        cls := "input input-login",
         placeholder("Электронная почта"),
         onInput.mapToValue --> emailVar
       )
@@ -50,7 +52,7 @@ case class RegistrationView()(using ExecutionContext) extends View:
   private def renderPasswordInput: HtmlElement =
     div(
       input(
-        cls := "input input-user",
+        cls := "input input-login",
         typ := "password",
         placeholder("Пароль"),
         onInput.mapToValue --> passwordVar
@@ -60,7 +62,7 @@ case class RegistrationView()(using ExecutionContext) extends View:
   private def renderRegisterButton: HtmlElement =
     div(
       button(
-        cls := "button button-user",
+        cls := "button button-login",
         typ := "submit",
         "Зарегистрироваться",
         onClick
@@ -84,7 +86,7 @@ case class RegistrationView()(using ExecutionContext) extends View:
               )
           ) --> {
           case Left(err: Throwable) => dom.window.alert(err.getMessage)
-          case Right(response)      => dom.window.alert(response.toString)
+          case Right(response)      => router.pushState(LoginPage())
         }
       )
     )

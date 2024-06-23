@@ -1,7 +1,6 @@
 package libra
 
 import com.raquo.laminar.api.L.{*, given}
-import libra.Pages.*
 import libra.Routes.*
 import org.scalajs.dom
 
@@ -12,7 +11,7 @@ object App:
 
   private val app: HtmlElement =
     div(
-      child <-- router.currentPageSignal.map(renderPage)
+      child <-- views.signal
     )
 
   def main(args: Array[String]): Unit =

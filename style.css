@@ -40,7 +40,7 @@ button {
 
 /** Аутентификация и регистрация. */
 
-.block-user {
+.block-login {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -48,22 +48,22 @@ button {
   width: 400px;
 }
 
-.block-user * {
+.block-login * {
   box-sizing: border-box;
 }
 
-.input-user {
+.input-login {
   width: 200px;
 }
 
-.button-user {
+.button-login {
   background-color: white;
   color: black;
   border: 2px solid #007ba7;
   width: 200px;
 }
 
-.button-user:hover {
+.button-login:hover {
   background-color: #007ba7;
   color: white;
 }

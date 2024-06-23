@@ -20,6 +20,8 @@ libraryDependencies += "com.raquo" %%% "laminar" % "17.0.0"
 libraryDependencies += "com.raquo" %%% "waypoint" % "8.0.0"
 libraryDependencies += "io.github.cquiroz" %%% "scala-java-time" % "2.6.0"
 libraryDependencies += "org.scalatest" %%% "scalatest" % "3.2.18" % Test
+libraryDependencies += ("org.scala-js" %%% "scalajs-java-securerandom" % "1.0.0")
+  .cross(CrossVersion.for3Use2_13)
 
 val circeVersion = "0.14.7"
 

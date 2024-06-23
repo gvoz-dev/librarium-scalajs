@@ -18,7 +18,7 @@ case class LoginView()(using ExecutionContext) extends View:
     div(
       cls := "container",
       div(
-        cls := "block-user",
+        cls := "block-login",
         h1("Librarium"),
         h2("Вход"),
         renderEmailInput,
@@ -30,7 +30,7 @@ case class LoginView()(using ExecutionContext) extends View:
   private def renderEmailInput: HtmlElement =
     div(
       input(
-        cls := "input input-user",
+        cls := "input input-login",
         placeholder("Электронная почта"),
         onInput.mapToValue --> emailVar
       )
@@ -39,7 +39,7 @@ case class LoginView()(using ExecutionContext) extends View:
   private def renderPasswordInput: HtmlElement =
     div(
       input(
-        cls := "input input-user",
+        cls := "input input-login",
         typ := "password",
         placeholder("Пароль"),
         onInput.mapToValue --> passwordVar
@@ -49,9 +49,8 @@ case class LoginView()(using ExecutionContext) extends View:
   private def renderLoginButton: HtmlElement =
     div(
       button(
-        cls := "button button-user",
-        typ := "submit",
-        "Вход",
+        cls := "button button-login",
+        "Войти",
         onClick
           .mapTo(Credentials(emailVar.now(), passwordVar.now()))
           .flatMap(credentials =>

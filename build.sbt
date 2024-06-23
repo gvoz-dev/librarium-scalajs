@@ -18,6 +18,7 @@ lazy val root = (project in file("."))
 libraryDependencies += "org.scala-js" %%% "scalajs-dom" % "2.8.0"
 libraryDependencies += "com.raquo" %%% "laminar" % "17.0.0"
 libraryDependencies += "com.raquo" %%% "waypoint" % "8.0.0"
+libraryDependencies += "io.github.cquiroz" %%% "scala-java-time" % "2.6.0"
 libraryDependencies += "org.scalatest" %%% "scalatest" % "3.2.18" % Test
 
 val circeVersion = "0.14.7"

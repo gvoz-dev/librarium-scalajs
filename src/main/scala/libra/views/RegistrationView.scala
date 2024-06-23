@@ -1,7 +1,6 @@
 package libra.views
 
 import com.raquo.laminar.api.L.{*, given}
-import libra.backendApiUrl
 import libra.entities.{*, given}
 import libra.http.HttpClient
 import org.scalajs.dom
@@ -11,7 +10,7 @@ import scala.concurrent.*
 case class RegistrationView()(using ExecutionContext) extends View:
 
   private val httpClient = HttpClient()
-  private val url = backendApiUrl + "/registration"
+  private val url = libra.App.apiPath + "/registration"
   private val nameVar: Var[String] = Var("")
   private val emailVar: Var[String] = Var("")
   private val passwordVar: Var[String] = Var("")
@@ -26,7 +25,7 @@ case class RegistrationView()(using ExecutionContext) extends View:
         renderNameInput,
         renderEmailInput,
         renderPasswordInput,
-        renderEnterButton
+        renderRegisterButton
       )
     )
 
@@ -58,7 +57,7 @@ case class RegistrationView()(using ExecutionContext) extends View:
       )
     )
 
-  private def renderEnterButton: HtmlElement =
+  private def renderRegisterButton: HtmlElement =
     div(
       button(
         cls := "button button-user",

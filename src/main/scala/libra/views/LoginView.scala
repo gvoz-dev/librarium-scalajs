@@ -1,7 +1,6 @@
 package libra.views
 
 import com.raquo.laminar.api.L.{*, given}
-import libra.backendApiUrl
 import libra.entities.{*, given}
 import libra.http.HttpClient
 import org.scalajs.dom
@@ -11,7 +10,7 @@ import scala.concurrent.*
 case class LoginView()(using ExecutionContext) extends View:
 
   private val httpClient = HttpClient()
-  private val loginApiUrl = backendApiUrl + "/login"
+  private val url = libra.App.apiPath + "/login"
   private val emailVar: Var[String] = Var("")
   private val passwordVar: Var[String] = Var("")
 
@@ -24,7 +23,7 @@ case class LoginView()(using ExecutionContext) extends View:
         h2("Вход"),
         renderEmailInput,
         renderPasswordInput,
-        renderEnterButton
+        renderLoginButton
       )
     )
 
@@ -47,7 +46,7 @@ case class LoginView()(using ExecutionContext) extends View:
       )
     )
 
-  private def renderEnterButton: HtmlElement =
+  private def renderLoginButton: HtmlElement =
     div(
       button(
         cls := "button button-user",
@@ -58,7 +57,7 @@ case class LoginView()(using ExecutionContext) extends View:
           .flatMap(credentials =>
             if credentials.isValid then
               EventStream.fromFuture(
-                httpClient.post[Credentials, Token](loginApiUrl, credentials)
+                httpClient.post[Credentials, Token](url, credentials)
               )
             else
               EventStream.fromFuture(
@@ -72,7 +71,9 @@ case class LoginView()(using ExecutionContext) extends View:
               )
           ) --> {
           case Left(err: Throwable) => dom.window.alert(err.getMessage)
-          case Right(response)      => dom.window.alert(response.toString)
+          case Right(response: Token) =>
+            dom.window.localStorage.setItem("jwt", response.jwt)
+            dom.window.alert(dom.window.localStorage.getItem("jwt"))
         }
       )
     )

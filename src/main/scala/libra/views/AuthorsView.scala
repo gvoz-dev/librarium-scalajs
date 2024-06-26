@@ -5,40 +5,37 @@ import com.raquo.laminar.nodes.ReactiveHtmlElement
 import libra.entities.Author
 import libra.http.HttpClient
 import libra.models.AuthorsModel
-import libra.models.AuthorsModel.AuthorData
+import libra.models.AuthorsModel.AuthorRecord
 import org.scalajs.dom
 import org.scalajs.dom.HTMLButtonElement
 
 import java.util.UUID
 import scala.concurrent.*
 
+// TODO: Временно эта страница используется только для экспериментов со Scala.js и Laminar!
 case class AuthorsView()(using ExecutionContext) extends View:
 
   private enum ActiveButton:
     case ADD, SAVE
 
-  private val httpClient = HttpClient()
-  private val url = libra.App.apiPath + "/authors"
+  private val httpClient                         = HttpClient()
+  private val url                                = libra.App.apiPath + "/authors"
   private val activeButtonVar: Var[ActiveButton] = Var(ActiveButton.ADD)
-  private val model = new AuthorsModel
+  private val model                              = new AuthorsModel
 
   import model.*
 
   private val getAuthorsStream: EventStream[Either[Throwable, List[Author]]] =
     EventStream.fromFuture(httpClient.get[List[Author]](url))
 
-  private def postAuthorStream(
-      author: Author
-  ): EventStream[Either[Throwable, Author]] =
+  private def postAuthorStream(author: Author): EventStream[Either[Throwable, Author]] =
     val jwt = dom.window.localStorage.getItem("jwt")
     EventStream.fromFuture(httpClient.post[Author, Author](url, jwt, author))
   end postAuthorStream
 
-  private def deleteAuthorStream(
-      id: UUID
-  ): EventStream[Either[Throwable, Unit]] =
+  private def deleteAuthorStream(id: UUID): EventStream[Option[Throwable]] =
     val urlWithId = url + "/" + id.toString
-    val jwt = dom.window.localStorage.getItem("jwt")
+    val jwt       = dom.window.localStorage.getItem("jwt")
     EventStream.fromFuture(httpClient.delete(urlWithId, jwt))
   end deleteAuthorStream
 
@@ -49,13 +46,13 @@ case class AuthorsView()(using ExecutionContext) extends View:
         child <-- getAuthorsStream.splitEither(
           (err, _) => div(s"Ошибка загрузки страницы: $err"),
           (authors, _) =>
-            init(authors.map(_.toModelData))
+            init(authors.map(_.toModelRecord))
             renderDataTable()
         )
       )
     )
 
-  private def renderDataTable(): Element =
+  private def renderDataTable(): HtmlElement =
     table(
       thead(tr(th("ID"), th("Name"), th("Country"))),
       tbody(
@@ -83,12 +80,12 @@ case class AuthorsView()(using ExecutionContext) extends View:
 
   private def renderDataItem(
       id: UUID,
-      itemSignal: Signal[AuthorData]
-  ): Element =
+      itemSignal: Signal[AuthorRecord]
+  ): HtmlElement =
     tr(
       td(
         input(
-          typ := "text",
+          typ      := "text",
           disabled := true,
           value <-- itemSignal.map(_.id.toString)
         )
@@ -96,32 +93,25 @@ case class AuthorsView()(using ExecutionContext) extends View:
       td(
         inputForString(
           itemSignal.map(_.name),
-          dataItemUpdater(
-            id,
-            { (item, newName) => item.copy(name = newName) }
-          )
+          dataItemUpdater(id, { (item, newName) => item.copy(name = newName) })
         )
       ),
       td(
         inputForString(
           itemSignal.map(_.country),
-          dataItemUpdater(
-            id,
-            { (item, newCountry) => item.copy(country = newCountry) }
-          )
+          dataItemUpdater(id, { (item, newCountry) => item.copy(country = newCountry) })
         )
       ),
       td(
         button(
           "🗑️",
           onClick.flatMap(_ => deleteAuthorStream(id)) --> {
-            case Left(err: Throwable) => dom.window.alert(err.getMessage)
-            case Right(_)             => removeDataItem(id)
+            case Some(err: Throwable) => dom.window.alert(err.getMessage)
+            case _                    => removeDataItem(id)
           }
         )
       )
     )
-  end renderDataItem
 
   private def inputForString(
       valueSignal: Signal[String],
@@ -135,7 +125,7 @@ case class AuthorsView()(using ExecutionContext) extends View:
 
   private def dataItemUpdater[A](
       id: UUID,
-      f: (AuthorData, A) => AuthorData
+      f: (AuthorRecord, A) => AuthorRecord
   ): Observer[A] =
     dataVar.updater { (data, newValue) =>
       data.map { item =>
@@ -143,37 +133,37 @@ case class AuthorsView()(using ExecutionContext) extends View:
       }
     }
 
-  private def enabledAddButton =
+  private def enabledAddButton: Button =
     button(
       "Добавить",
       onClick --> { _ =>
-        addDataItem(AuthorData())
+        addDataItem(AuthorRecord())
         activeButtonVar.set(ActiveButton.SAVE)
       }
     )
 
-  private def disabledAddButton =
+  private def disabledAddButton: Button =
     button(
       "Добавить",
       disabled := true
     )
 
-  private def enabledSaveButton =
+  private def enabledSaveButton: Button =
     button(
       "Сохранить",
       onClick.flatMap { _ =>
-        val author = Author.fromModelData(dataVar.now().last)
+        val author = Author.fromModelRecord(dataVar.now().last)
         postAuthorStream(author)
       } --> {
-        case Left(err: Throwable) =>
+        case Left(err: Throwable)  =>
           dom.window.alert(err.getMessage)
         case Right(author: Author) =>
-          updateLastDataItem(author.toModelData)
+          updateLastDataItem(author.toModelRecord)
           activeButtonVar.set(ActiveButton.ADD)
       }
     )
 
-  private def disabledSaveButton =
+  private def disabledSaveButton: Button =
     button(
       "Сохранить",
       disabled := true

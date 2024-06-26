@@ -21,13 +21,10 @@ class HttpClient(using ExecutionContext):
 
   given Decoder[ResponseError] = deriveDecoder[ResponseError]
 
-  /** Метод расширения класса [[Response]], который позволяет получить
-    * [[Future]] с результатом ответа (Right) или ошибкой (Left).
-    */
+  /** Методы расширения класса [[Response]], которые позволяют получить [[Future]] с результатом ответа. */
   extension (response: Response)
-    private def to[R: Decoder](using
-        ExecutionContext
-    ): Future[Either[Throwable, R]] =
+    /** При успехе ожидается тело ответа, но возможна ошибка. */
+    private def to[R: Decoder](using ExecutionContext): Future[Either[Throwable, R]] =
       response
         .text()
         .toFuture
@@ -35,6 +32,17 @@ class HttpClient(using ExecutionContext):
           if response.ok then Future.successful(decode[R](json))
           else Future.successful(decode[ResponseError](json).flatMap(Left(_)))
         }
+
+    /** При успехе тело ответа не ожидается (например, код 204), но возможна ошибка. */
+    private def toEmpty(using ExecutionContext): Future[Option[Throwable]] =
+      response
+        .text()
+        .toFuture
+        .flatMap { json =>
+          if response.ok then Future.successful(None)
+          else Future.successful(decode[ResponseError](json).toOption)
+        }
+  end extension
 
   /** HTTP-метод GET.
     *
@@ -116,7 +124,7 @@ class HttpClient(using ExecutionContext):
       bodyData: T
   ): Future[Either[Throwable, R]] =
     val jsonBody = bodyData.asJson.toString
-    val request = Request(
+    val request  = Request(
       url,
       init = new RequestInit {
         method = HttpMethod.POST
@@ -198,7 +206,7 @@ class HttpClient(using ExecutionContext):
       bodyData: T
   ): Future[Either[Throwable, R]] =
     val jsonBody = bodyData.asJson.toString
-    val request = Request(
+    val request  = Request(
       url,
       init = new RequestInit {
         method = HttpMethod.PUT
@@ -271,7 +279,7 @@ class HttpClient(using ExecutionContext):
   def delete(
       url: String,
       headersInit: HeadersInit
-  ): Future[Either[Throwable, Unit]] =
+  ): Future[Option[Throwable]] =
     val request = Request(
       url,
       init = new RequestInit {
@@ -282,8 +290,8 @@ class HttpClient(using ExecutionContext):
     Fetch
       .fetch(request)
       .toFuture
-      .flatMap(_.to[Unit])
-      .recoverWith { case err: Throwable => Future.successful(Left(err)) }
+      .flatMap(_.toEmpty)
+      .recoverWith { case err: Throwable => Future.successful(Some(err)) }
   end delete
 
   /** HTTP-метод DELETE со стандартными заголовками.
@@ -293,7 +301,7 @@ class HttpClient(using ExecutionContext):
     */
   def delete(
       url: String
-  ): Future[Either[Throwable, Unit]] =
+  ): Future[Option[Throwable]] =
     val headers: HeadersInit = js.Array(js.Array("accept", "application/json"))
     delete(url, headers)
   end delete
@@ -308,7 +316,7 @@ class HttpClient(using ExecutionContext):
   def delete(
       url: String,
       jwt: String
-  ): Future[Either[Throwable, Unit]] =
+  ): Future[Option[Throwable]] =
     val headers: HeadersInit = js.Array(
       js.Array("accept", "application/json"),
       js.Array("X-JWT-Auth", jwt)

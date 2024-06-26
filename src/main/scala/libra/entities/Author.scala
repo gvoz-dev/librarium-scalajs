@@ -2,7 +2,7 @@ package libra.entities
 
 import io.circe.*
 import io.circe.generic.semiauto.*
-import libra.models.AuthorsModel.AuthorData
+import libra.models.AuthorsModel.AuthorRecord
 
 import java.util.UUID
 
@@ -21,21 +21,19 @@ final case class Author(
     country: Option[String]
 ):
 
-  def toModelData: AuthorData =
-    if id.isDefined then AuthorData(id.get, name, country.getOrElse(""))
-    else AuthorData(name, country.getOrElse(""))
+  def toModelRecord: AuthorRecord =
+    val uuid = id.getOrElse(UUID.randomUUID())
+    AuthorRecord(uuid, name, country.getOrElse(""))
 
 end Author
 
 object Author:
 
-  def fromModelData(authorData: AuthorData): Author =
-    val country =
-      if authorData.country.isEmpty then None
-      else Some(authorData.country)
-    Author(Some(authorData.id), authorData.name, country)
-  end fromModelData
-
   given Codec[Author] = deriveCodec
+
+  def fromModelRecord(record: AuthorRecord): Author =
+    import libra.utils.Misc.transformToOption
+    Author(Some(record.id), record.name, record.country.transformToOption)
+  end fromModelRecord
 
 end Author

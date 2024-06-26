@@ -25,17 +25,19 @@ button {
 .input {
   font-size: 14px;
   padding: 4px 8px;
+  border: 1px solid #C0C0C0;
+  border-radius: 4px;
 }
 
 .button {
   background-color: #007ba7;
-  border: none;
   color: white;
   text-align: center;
   font-size: 14px;
   padding: 4px 8px;
   transition-duration: 0.4s;
   cursor: pointer;
+  border-radius: 4px;
 }
 
 /** Аутентификация и регистрация. */
@@ -65,5 +67,51 @@ button {
 
 .button-login:hover {
   background-color: #007ba7;
+  color: white;
+}
+
+/** Книги. */
+
+.block-books {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.block-books * {
+  box-sizing: border-box;
+}
+
+.button-books {
+  background-color: white;
+  color: black;
+  border: 2px solid #007ba7;
+}
+
+.button-books:hover {
+  background-color: #007ba7;
+  color: white;
+}
+
+.button-books-red {
+  background-color: white;
+  color: black;
+  border: 2px solid #ff6347;
+}
+
+.button-books-red:hover {
+  background-color: #ff6347;
+  color: white;
+}
+
+.button-books-green {
+  background-color: white;
+  color: black;
+  border: 2px solid #3CB371;
+}
+
+.button-books-green:hover {
+  background-color: #3CB371;
   color: white;
 }

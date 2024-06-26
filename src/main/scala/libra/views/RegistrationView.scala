@@ -11,10 +11,10 @@ import scala.concurrent.*
 
 case class RegistrationView()(using ExecutionContext) extends View:
 
-  private val httpClient = HttpClient()
-  private val url = libra.App.apiPath + "/registration"
-  private val nameVar: Var[String] = Var("")
-  private val emailVar: Var[String] = Var("")
+  private val httpClient               = HttpClient()
+  private val url                      = libra.App.apiPath + "/registration"
+  private val nameVar: Var[String]     = Var("")
+  private val emailVar: Var[String]    = Var("")
   private val passwordVar: Var[String] = Var("")
 
   override def render: HtmlElement =
@@ -63,26 +63,14 @@ case class RegistrationView()(using ExecutionContext) extends View:
     div(
       button(
         cls := "button button-login",
-        typ := "submit",
         "Зарегистрироваться",
         onClick
-          .mapTo(
-            User(None, nameVar.now(), emailVar.now(), Some(passwordVar.now()))
-          )
+          .mapTo(User(None, nameVar.now(), emailVar.now(), Some(passwordVar.now())))
           .flatMap(user =>
-            if true then
-              EventStream.fromFuture(
-                httpClient.post[User, User](url, user)
-              )
+            if user.isValid then EventStream.fromFuture(httpClient.post[User, User](url, user))
             else
               EventStream.fromFuture(
-                Future.successful(
-                  Left(
-                    Exception(
-                      "Введите валидный адрес электронной почты и пароль"
-                    )
-                  )
-                )
+                Future.successful(Left(Exception("Введите валидный адрес электронной почты и пароль")))
               )
           ) --> {
           case Left(err: Throwable) => dom.window.alert(err.getMessage)

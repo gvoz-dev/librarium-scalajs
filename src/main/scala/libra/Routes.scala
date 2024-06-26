@@ -10,6 +10,7 @@ import libra.views.*
 import scala.concurrent.ExecutionContext
 import scala.scalajs.concurrent.JSExecutionContext
 
+/** Маршруты клиентского приложения. */
 object Routes:
 
   given ExecutionContext = JSExecutionContext.queue
@@ -20,7 +21,8 @@ object Routes:
     Route.static(HomePage(), appRoot / endOfSegments),
     Route.static(LoginPage(), appRoot / "login" / endOfSegments),
     Route.static(RegistrationPage(), appRoot / "registration" / endOfSegments),
-    Route.static(AuthorsPage(), appRoot / "authors" / endOfSegments)
+    Route.static(AuthorsPage(), appRoot / "authors" / endOfSegments),
+    Route.static(BooksPage(), appRoot / "books" / endOfSegments)
   )
 
   val router: Router[Page] =
@@ -41,6 +43,7 @@ object Routes:
       .collectStatic(LoginPage())(LoginView().render)
       .collectStatic(RegistrationPage())(RegistrationView().render)
       .collectStatic(AuthorsPage())(AuthorsView().render)
+      .collectStatic(BooksPage())(BooksView().render)
       .collectStatic(NotFoundPage())(NotFoundView().render)
 
 end Routes

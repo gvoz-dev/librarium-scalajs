@@ -3,6 +3,9 @@ package libra.entities
 import io.circe.*
 import io.circe.generic.semiauto.*
 import libra.entities.*
+import libra.models.AuthorsModel.AuthorRecord
+import libra.models.BooksModel.BookRecord
+import libra.models.PublishersModel.PublisherRecord
 
 import java.util.UUID
 
@@ -49,10 +52,58 @@ final case class Book(
     category: Option[String],
     publisher: Option[Publisher],
     author: Option[Author]
-)
+):
+
+  def toModelRecord: BookRecord =
+    val uuid = id.getOrElse(UUID.randomUUID())
+    BookRecord(
+      uuid,
+      title,
+      isbn.getOrElse(""),
+      isbn13.getOrElse(""),
+      edition.getOrElse(""),
+      year.getOrElse(2024),
+      pages.getOrElse(0),
+      image.getOrElse(""),
+      description.getOrElse(""),
+      language.getOrElse(""),
+      category.getOrElse(""),
+      publisher.map(_.toModelRecord).getOrElse(PublisherRecord()),
+      author.map(_.toModelRecord).getOrElse(AuthorRecord())
+    )
+
+end Book
 
 object Book:
 
   given Codec[Book] = deriveCodec
+
+  def fromModelRecord(record: BookRecord): Book =
+    import libra.utils.Misc.transformToOption
+
+    val publisher =
+      if record.publisher.isEmptyRecord then None
+      else Some(Publisher.fromModelRecord(record.publisher))
+
+    val author =
+      if record.publisher.isEmptyRecord then None
+      else Some(Author.fromModelRecord(record.author))
+
+    Book(
+      Some(record.id),
+      record.title,
+      record.isbn.transformToOption,
+      record.isbn13.transformToOption,
+      record.edition.transformToOption,
+      Some(record.year),
+      Some(record.pages),
+      record.image.transformToOption,
+      record.description.transformToOption,
+      record.language.transformToOption,
+      record.category.transformToOption,
+      publisher,
+      author
+    )
+  end fromModelRecord
 
 end Book

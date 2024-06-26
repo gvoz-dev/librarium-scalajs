@@ -10,18 +10,27 @@ import java.util.UUID
   *
   * @param id
   *   уникальный идентификатор
+  * @param userId
+  *   уникальный идентификатор пользователя
+  * @param bookId
+  *   уникальный идентификатор книги
   * @param text
   *   текст комментария
   * @param isPrivate
   *   является или нет комментарий приватным
-  * @param date
-  *   дата и время комментария
+  * @param time
+  *   время публикации комментария
+  * @param lastModifiedTime
+  *   время последнего изменения
   */
 final case class Comment(
     id: Option[UUID],
+    userId: UUID,
+    bookId: UUID,
     text: String,
     isPrivate: Boolean,
-    date: Option[LocalDateTime]
+    time: Option[LocalDateTime],
+    lastModifiedTime: Option[LocalDateTime]
 )
 
 object Comment:

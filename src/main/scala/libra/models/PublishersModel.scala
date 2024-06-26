@@ -4,9 +4,9 @@ import com.raquo.laminar.api.L.{*, given}
 
 import java.util.UUID
 
-class AuthorsModel extends Model:
+class PublishersModel extends Model:
 
-  type DataType = AuthorsModel.AuthorRecord
+  type DataType = PublishersModel.PublisherRecord
   type DataList = List[DataType]
 
   val dataVar: Var[DataList]             = Var(List())
@@ -18,11 +18,11 @@ class AuthorsModel extends Model:
   def removeDataItem(id: UUID): Unit =
     dataVar.update(data => data.filter(_.id != id))
 
-end AuthorsModel
+end PublishersModel
 
-object AuthorsModel:
+object PublishersModel:
 
-  case class AuthorRecord(
+  case class PublisherRecord(
       id: UUID,
       name: String,
       country: String
@@ -31,20 +31,20 @@ object AuthorsModel:
     def isEmptyRecord: Boolean =
       name.isEmpty && country.isEmpty
 
-  end AuthorRecord
+  end PublisherRecord
 
-  object AuthorRecord:
+  object PublisherRecord:
 
-    def apply(): AuthorRecord =
-      AuthorRecord("")
+    def apply(): PublisherRecord =
+      PublisherRecord("")
 
-    def apply(name: String): AuthorRecord =
-      AuthorRecord(name, "")
+    def apply(name: String): PublisherRecord =
+      PublisherRecord(name, "")
 
-    def apply(name: String, country: String): AuthorRecord =
+    def apply(name: String, country: String): PublisherRecord =
       val uuid = UUID.randomUUID()
-      AuthorRecord(uuid, name, country)
+      PublisherRecord(uuid, name, country)
 
-  end AuthorRecord
+  end PublisherRecord
 
-end AuthorsModel
+end PublishersModel

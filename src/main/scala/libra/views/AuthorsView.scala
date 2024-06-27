@@ -104,7 +104,7 @@ case class AuthorsView()(using ExecutionContext) extends View:
       ),
       td(
         button(
-          "🗑️",
+          "Удалить",
           onClick.flatMap(_ => deleteAuthorStream(id)) --> {
             case Some(err: Throwable) => dom.window.alert(err.getMessage)
             case _                    => removeDataItem(id)

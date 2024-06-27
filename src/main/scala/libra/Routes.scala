@@ -22,7 +22,8 @@ object Routes:
     Route.static(LoginPage(), appRoot / "login" / endOfSegments),
     Route.static(RegistrationPage(), appRoot / "registration" / endOfSegments),
     Route.static(AuthorsPage(), appRoot / "authors" / endOfSegments),
-    Route.static(BooksPage(), appRoot / "books" / endOfSegments)
+    Route.static(BooksPage(), appRoot / "books" / endOfSegments),
+    Route.static(CreateBookPage(), appRoot / "books" / "create" / endOfSegments)
   )
 
   val router: Router[Page] =
@@ -44,6 +45,7 @@ object Routes:
       .collectStatic(RegistrationPage())(RegistrationView().render)
       .collectStatic(AuthorsPage())(AuthorsView().render)
       .collectStatic(BooksPage())(BooksView().render)
+      .collectStatic(CreateBookPage())(CreateBookView().render)
       .collectStatic(NotFoundPage())(NotFoundView().render)
 
 end Routes

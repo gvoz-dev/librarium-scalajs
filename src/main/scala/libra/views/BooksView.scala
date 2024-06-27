@@ -2,6 +2,8 @@ package libra.views
 
 import com.raquo.laminar.api.L.{*, given}
 import com.raquo.laminar.nodes.ReactiveHtmlElement
+import libra.Pages.CreateBookPage
+import libra.Routes.router
 import libra.entities.Book
 import libra.http.HttpClient
 import libra.models.BooksModel
@@ -147,10 +149,12 @@ case class BooksView()(using ExecutionContext) extends View:
     )
 
   private def renderCreateBookButton: HtmlElement =
+    import com.raquo.laminar.api.features.unitArrows
     div(
       button(
         cls := "button button-books",
-        "Добавить новую книгу"
+        "Добавить новую книгу",
+        onClick --> { router.pushState(CreateBookPage()) }
       )
     )
 

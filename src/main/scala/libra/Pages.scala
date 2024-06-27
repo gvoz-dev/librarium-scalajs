@@ -14,6 +14,7 @@ object Pages:
   case class NotFoundPage()     extends Page("404 Not Found")
   case class AuthorsPage()      extends Page("Authors")
   case class BooksPage()        extends Page("Books")
+  case class CreateBookPage()   extends Page("Create book")
 
   given Codec[Page]             = deriveCodec
   given Codec[HomePage]         = deriveCodec
@@ -22,5 +23,6 @@ object Pages:
   given Codec[NotFoundPage]     = deriveCodec
   given Codec[AuthorsPage]      = deriveCodec
   given Codec[BooksPage]        = deriveCodec
+  given Codec[CreateBookPage]   = deriveCodec
 
 end Pages

@@ -9,7 +9,7 @@ import org.scalajs.dom.*
 import scala.concurrent.*
 import scala.scalajs.js
 
-/** Кастомный HTTP-клиент - обёртка над Fetch API. */
+/** HTTP-клиент - обёртка над Fetch API. */
 class HttpClient(using ExecutionContext):
 
   /** Тело HTTP-ответа с сообщением об ошибке.

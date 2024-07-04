@@ -62,8 +62,8 @@ final case class Book(
       isbn.getOrElse(""),
       isbn13.getOrElse(""),
       edition.getOrElse(""),
-      year.getOrElse(2024),
-      pages.getOrElse(0),
+      year.map(_.toString).getOrElse(""),
+      pages.map(_.toString).getOrElse(""),
       image.getOrElse(""),
       description.getOrElse(""),
       language.getOrElse(""),
@@ -82,11 +82,11 @@ object Book:
     import libra.utils.Misc.transformToOption
 
     val publisher =
-      if record.publisher.isEmptyRecord then None
+      if record.publisher.isEmpty then None
       else Some(Publisher.fromModelRecord(record.publisher))
 
     val author =
-      if record.publisher.isEmptyRecord then None
+      if record.publisher.isEmpty then None
       else Some(Author.fromModelRecord(record.author))
 
     Book(
@@ -95,8 +95,8 @@ object Book:
       record.isbn.transformToOption,
       record.isbn13.transformToOption,
       record.edition.transformToOption,
-      Some(record.year),
-      Some(record.pages),
+      record.year.toIntOption,
+      record.pages.toIntOption,
       record.image.transformToOption,
       record.description.transformToOption,
       record.language.transformToOption,

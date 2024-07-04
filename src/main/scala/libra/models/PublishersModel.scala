@@ -12,23 +12,26 @@ class PublishersModel extends Model:
   val dataVar: Var[DataList]             = Var(List())
   val dataSignal: StrictSignal[DataList] = dataVar.signal
 
-  def addDataItem(item: DataType): Unit =
+  override def getDataItem(id: UUID): Option[PublishersModel.PublisherRecord] =
+    dataVar.now().find(item => item.id == id)
+
+  override def addDataItem(item: DataType): Unit =
     dataVar.update(data => data :+ item)
 
-  def removeDataItem(id: UUID): Unit =
+  override def removeDataItem(id: UUID): Unit =
     dataVar.update(data => data.filter(_.id != id))
 
 end PublishersModel
 
 object PublishersModel:
 
-  case class PublisherRecord(
+  final case class PublisherRecord(
       id: UUID,
       name: String,
       country: String
   ):
 
-    def isEmptyRecord: Boolean =
+    def isEmpty: Boolean =
       name.isEmpty && country.isEmpty
 
   end PublisherRecord

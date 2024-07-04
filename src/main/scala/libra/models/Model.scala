@@ -21,10 +21,12 @@ trait Model:
   def init(items: DataList): Unit =
     dataVar.set(items)
 
-  /** Обновить последний элемент данных из модели. */
-  def updateLastDataItem(item: DataType): Unit =
-    dataVar.update(_.dropRight(1))
-    addDataItem(item)
+  /** Получить элемент данных по идентификатору.
+    *
+    * @param id
+    *   уникальный идентификатор элемента
+    */
+  def getDataItem(id: UUID): Option[DataType]
 
   /** Добавить элемент данных в модель.
     *
@@ -32,6 +34,17 @@ trait Model:
     *   элемент данных
     */
   def addDataItem(item: DataType): Unit
+
+  /** Обновить последний элемент данных из модели.
+    *
+    * @param id
+    *   уникальный идентификатор элемента
+    * @param item
+    *   элемент данных
+    */
+  def updateDataItem(id: UUID, item: DataType): Unit =
+    removeDataItem(id)
+    addDataItem(item)
 
   /** Удалить элемент данных из модели.
     *

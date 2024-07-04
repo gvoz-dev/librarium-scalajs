@@ -12,10 +12,13 @@ class BooksModel extends Model:
   val dataVar: Var[DataList]             = Var(List())
   val dataSignal: StrictSignal[DataList] = dataVar.signal
 
-  def addDataItem(item: DataType): Unit =
+  override def getDataItem(id: UUID): Option[BooksModel.BookRecord] =
+    dataVar.now().find(item => item.id == id)
+
+  override def addDataItem(item: DataType): Unit =
     dataVar.update(data => data :+ item)
 
-  def removeDataItem(id: UUID): Unit =
+  override def removeDataItem(id: UUID): Unit =
     dataVar.update(data => data.filter(_.id != id))
 
 end BooksModel
@@ -28,8 +31,8 @@ object BooksModel:
       isbn: String,
       isbn13: String,
       edition: String,
-      year: Int,
-      pages: Int,
+      year: String,
+      pages: String,
       image: String,
       description: String,
       language: String,
@@ -51,8 +54,8 @@ object BooksModel:
         isbn = "",
         isbn13 = "",
         edition = "",
-        year = 2024,
-        pages = 0,
+        year = "",
+        pages = "",
         image = "",
         description = "",
         language = "",

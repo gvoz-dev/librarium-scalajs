@@ -22,8 +22,8 @@ final case class Author(
 ):
 
   def toModelRecord: AuthorRecord =
-    val uuid = id.getOrElse(UUID.randomUUID())
-    AuthorRecord(uuid, name, country.getOrElse(""))
+    if id.isDefined then AuthorRecord(id.get, name, country.getOrElse(""), true)
+    else AuthorRecord(UUID.randomUUID(), name, country.getOrElse(""), false)
 
 end Author
 

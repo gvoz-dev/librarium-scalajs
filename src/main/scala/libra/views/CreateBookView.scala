@@ -1,33 +1,37 @@
 package libra.views
 
 import com.raquo.laminar.api.L.{*, given}
-import libra.Pages.BooksPage
-import libra.Routes.router
+import libra.Pages.*
+import libra.Routes.*
 import libra.entities.*
 import libra.http.HttpClient
+import libra.utils.Misc
 import libra.utils.Misc.transformToOption
 import org.scalajs.dom
 
 import scala.concurrent.*
 import scala.util.*
 
-case class CreateBookView()(using ExecutionContext) extends View:
+/** Представление страницы создания (добавления) книги. */
+class CreateBookView(using ExecutionContext) extends View:
 
   private val httpClient = HttpClient()
   private val url        = libra.App.apiPath + "/books"
 
+  /** Рендер страницы создания (добавления) книги. */
   override def render: HtmlElement =
     div(
       cls := "container",
       div(
         cls := "block-create-book",
         h1("Создание книги"),
-        renderInputFields,
+        renderInfoInputs,
         renderCreateButton
       )
     )
 
   private val titleVar       = Var("")
+  private val authorNameVar  = Var("")
   private val isbnVar        = Var("")
   private val isbn13Var      = Var("")
   private val editionVar     = Var("")
@@ -36,39 +40,70 @@ case class CreateBookView()(using ExecutionContext) extends View:
   private val descriptionVar = Var("")
   private val languageVar    = Var("")
   private val categoryVar    = Var("")
-  private val authorNameVar  = Var("")
 
-  private def renderInputFields: HtmlElement =
+  /** Рендер полей ввода информации о книге. */
+  private def renderInfoInputs: HtmlElement =
     div(
-      renderInputField("title", titleVar, "Название*"),
-      renderInputField("authorName", authorNameVar, "Автор*"),
-      renderInputField("isbn", isbnVar, "ISBN (10-значный)"),
-      renderInputField("isbn13", isbn13Var, "ISBN (13-значный)"),
-      renderInputField("edition", editionVar, "Издание"),
-      renderInputField("year", yearVar, "Год издания"),
-      renderInputField("pages", pagesVar, "Количество страниц"),
-      renderInputField("description", descriptionVar, "Описание"),
-      renderInputField("language", languageVar, "Язык издания"),
-      renderInputField("category", categoryVar, "Категория")
+      renderTextInput(titleVar, "Название*"),
+      renderTextInput(authorNameVar, "Автор*"),
+      renderIsbnInput(isbnVar, "ISBN (10-значный)", 10),
+      renderIsbnInput(isbn13Var, "ISBN (13-значный)", 13),
+      renderTextInput(editionVar, "Издание"),
+      renderNumberInput(yearVar, "Год издания"),
+      renderNumberInput(pagesVar, "Количество страниц"),
+      renderTextInput(descriptionVar, "Описание"),
+      renderTextInput(languageVar, "Язык издания"),
+      renderTextInput(categoryVar, "Категория")
     )
 
-  private def renderInputField(
-      fieldId: String,
+  /** Рендер поля ввода текстовой информации. */
+  private def renderTextInput(
       fieldVar: Var[String],
       description: String
   ): HtmlElement =
     div(
-      label(
-        forId  := fieldId,
-        description
-      ),
+      label(description),
       input(
-        cls    := "input input-create-book",
-        idAttr := fieldId,
+        cls := "input input-create-book",
         onInput.mapToValue --> fieldVar
       )
     )
 
+  /** Рендер поля ввода ISBN. */
+  private def renderIsbnInput(
+      fieldVar: Var[String],
+      description: String,
+      length: Int
+  ): HtmlElement =
+    div(
+      label(description),
+      input(
+        cls := "input input-create-book",
+        maxLength(length),
+        controlled(
+          value <-- fieldVar,
+          onInput.mapToValue.filter(_.forall(Character.isDigit)) --> fieldVar
+        )
+      )
+    )
+
+  /** Рендер поля ввода чисел (год, количество страниц, etc.). */
+  private def renderNumberInput(
+      fieldVar: Var[String],
+      description: String
+  ): HtmlElement =
+    div(
+      label(description),
+      input(
+        cls := "input input-create-book",
+        controlled(
+          value <-- fieldVar,
+          onInput.mapToValue.filter(_.forall(Character.isDigit)) --> fieldVar
+        )
+      )
+    )
+
+  /** Рендер кнопки создания книги. */
   private def renderCreateButton: HtmlElement =
     div(
       button(
@@ -96,8 +131,9 @@ case class CreateBookView()(using ExecutionContext) extends View:
           )
           .flatMap {
             case Success(book)      =>
-              val jwt = dom.window.localStorage.getItem("jwt")
-              EventStream.fromFuture(httpClient.post[Book, Book](url, jwt, book))
+              Misc.getJwt
+                .map(jwt => EventStream.fromFuture(httpClient.post[Book, Book](url, jwt, book)))
+                .getOrElse(EventStream.fromValue(Left(Exception("Необходима аутентификация"))))
             case Failure(exception) =>
               EventStream.fromFuture(Future.successful(Left(exception)))
           } --> {

@@ -4,8 +4,10 @@ import com.raquo.laminar.api.L.{*, given}
 import libra.Pages.*
 import libra.Routes.*
 
-case class HomeView() extends View:
+/** Представление главной страницы. */
+class HomeView extends View:
 
+  /** Рендер главной страницы. */
   override def render: HtmlElement =
     div(
       cls := "container",
@@ -17,6 +19,7 @@ case class HomeView() extends View:
       )
     )
 
+  /** Рендер кнопки входа - переход на страницу аутентификации. */
   private def renderLoginButton: HtmlElement =
     import com.raquo.laminar.api.features.unitArrows
     div(
@@ -27,6 +30,7 @@ case class HomeView() extends View:
       )
     )
 
+  /** Рендер кнопки регистрации - переход на соответствующую страницу. */
   private def renderRegisterButton: HtmlElement =
     import com.raquo.laminar.api.features.unitArrows
     div(

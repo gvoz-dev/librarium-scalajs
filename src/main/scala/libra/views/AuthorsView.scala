@@ -6,39 +6,25 @@ import libra.entities.Author
 import libra.http.HttpClient
 import libra.models.AuthorsModel
 import libra.models.AuthorsModel.AuthorRecord
+import libra.utils.Misc
 import org.scalajs.dom
 import org.scalajs.dom.HTMLButtonElement
 
 import java.util.UUID
 import scala.concurrent.*
 
-// TODO: Временно эта страница используется только для экспериментов со Scala.js и Laminar!
-case class AuthorsView()(using ExecutionContext) extends View:
+/** Представление страницы авторов. */
+class AuthorsView(using ExecutionContext) extends View:
 
-  private enum ActiveButton:
-    case ADD, SAVE
+  private val httpClient = HttpClient()
+  private val url        = libra.App.apiPath + "/authors"
+  private val model      = new AuthorsModel
 
-  private val httpClient                         = HttpClient()
-  private val url                                = libra.App.apiPath + "/authors"
-  private val activeButtonVar: Var[ActiveButton] = Var(ActiveButton.ADD)
-  private val model                              = new AuthorsModel
-
-  import model.*
-
+  /** [[EventStream]] получения списка авторов. */
   private val getAuthorsStream: EventStream[Either[Throwable, List[Author]]] =
     EventStream.fromFuture(httpClient.get[List[Author]](url))
 
-  private def postAuthorStream(author: Author): EventStream[Either[Throwable, Author]] =
-    val jwt = dom.window.localStorage.getItem("jwt")
-    EventStream.fromFuture(httpClient.post[Author, Author](url, jwt, author))
-  end postAuthorStream
-
-  private def deleteAuthorStream(id: UUID): EventStream[Option[Throwable]] =
-    val urlWithId = url + "/" + id.toString
-    val jwt       = dom.window.localStorage.getItem("jwt")
-    EventStream.fromFuture(httpClient.delete(urlWithId, jwt))
-  end deleteAuthorStream
-
+  /** Рендер страницы авторов. */
   override def render: HtmlElement =
     div(
       cls := "container",
@@ -46,39 +32,34 @@ case class AuthorsView()(using ExecutionContext) extends View:
         child <-- getAuthorsStream.splitEither(
           (err, _) => div(s"Ошибка загрузки страницы: $err"),
           (authors, _) =>
-            init(authors.map(_.toModelRecord))
-            renderDataTable()
+            model.init(authors.map(_.toModelRecord))
+            div(
+              renderAuthorsTable,
+              renderAddButton
+            )
         )
       )
     )
 
-  private def renderDataTable(): HtmlElement =
+  /** Рендер таблицы авторов. */
+  private def renderAuthorsTable: HtmlElement =
     table(
-      thead(tr(th("ID"), th("Name"), th("Country"))),
-      tbody(
-        children <-- dataSignal.split(_.id) { (id, _, itemSignal) =>
-          renderDataItem(id, itemSignal)
-        }
-      ),
-      tfoot(
+      thead(
         tr(
-          td(
-            child <-- activeButtonVar.signal.map {
-              case ActiveButton.ADD  => enabledAddButton
-              case ActiveButton.SAVE => disabledAddButton
-            }
-          ),
-          td(
-            child <-- activeButtonVar.signal.map {
-              case ActiveButton.SAVE => enabledSaveButton
-              case ActiveButton.ADD  => disabledSaveButton
-            }
-          )
+          th("ID"),
+          th("Name"),
+          th("Country")
         )
+      ),
+      tbody(
+        children <-- model.dataSignal.split(_.id) { (id, _, itemSignal) =>
+          renderAuthor(id, itemSignal)
+        }
       )
     )
 
-  private def renderDataItem(
+  /** Рендер автора как элемента таблицы. */
+  private def renderAuthor(
       id: UUID,
       itemSignal: Signal[AuthorRecord]
   ): HtmlElement =
@@ -91,29 +72,39 @@ case class AuthorsView()(using ExecutionContext) extends View:
         )
       ),
       td(
-        inputForString(
+        renderInput(
           itemSignal.map(_.name),
-          dataItemUpdater(id, { (item, newName) => item.copy(name = newName) })
+          authorUpdater(id, { (item, newName) => item.copy(name = newName) })
         )
       ),
       td(
-        inputForString(
+        renderInput(
           itemSignal.map(_.country),
-          dataItemUpdater(id, { (item, newCountry) => item.copy(country = newCountry) })
+          authorUpdater(id, { (item, newCountry) => item.copy(country = newCountry) })
         )
       ),
       td(
-        button(
-          "Удалить",
-          onClick.flatMap(_ => deleteAuthorStream(id)) --> {
-            case Some(err: Throwable) => dom.window.alert(err.getMessage)
-            case _                    => removeDataItem(id)
-          }
+        renderCreateButton(
+          id,
+          itemSignal.map(_.stored)
+        )
+      ),
+      td(
+        renderUpdateButton(
+          id,
+          itemSignal.map(_.stored)
+        )
+      ),
+      td(
+        renderDeleteButton(
+          id,
+          itemSignal.map(_.stored)
         )
       )
     )
 
-  private def inputForString(
+  /** Рендер поля ввода. */
+  private def renderInput(
       valueSignal: Signal[String],
       valueUpdater: Observer[String]
   ): Input =
@@ -123,50 +114,136 @@ case class AuthorsView()(using ExecutionContext) extends View:
       onInput.mapToValue --> valueUpdater
     )
 
-  private def dataItemUpdater[A](
+  /** [[Observer]] обновления автора. */
+  private def authorUpdater[A](
       id: UUID,
       f: (AuthorRecord, A) => AuthorRecord
   ): Observer[A] =
-    dataVar.updater { (data, newValue) =>
+    model.dataVar.updater { (data, newValue) =>
       data.map { item =>
         if item.id == id then f(item, newValue) else item
       }
     }
 
-  private def enabledAddButton: Button =
+  /** Рендер кнопки добавления автора. */
+  private def renderAddButton: Button =
     button(
-      "Добавить",
+      "Добавить нового автора",
       onClick --> { _ =>
-        addDataItem(AuthorRecord())
-        activeButtonVar.set(ActiveButton.SAVE)
+        model.addDataItem(AuthorRecord())
       }
     )
 
-  private def disabledAddButton: Button =
-    button(
-      "Добавить",
-      disabled := true
-    )
+  /** [[EventStream]] создания автора.
+    *
+    * @param author
+    *   автор
+    */
+  private def postAuthorStream(author: Author): EventStream[Either[Throwable, Author]] =
+    Misc.getJwt
+      .map(jwt => EventStream.fromFuture(httpClient.post[Author, Author](url, jwt, author)))
+      .getOrElse(EventStream.fromValue(Left(Exception("Необходима аутентификация"))))
+  end postAuthorStream
 
-  private def enabledSaveButton: Button =
+  /** Рендер кнопки создания автора.
+    *
+    * @param id
+    *   уникальный идентификатор автора
+    * @param storedSignal
+    *   сигнал свойства "Автор сохранён"
+    */
+  private def renderCreateButton(
+      id: UUID,
+      storedSignal: Signal[Boolean]
+  ): Button =
     button(
       "Сохранить",
+      disabled <-- storedSignal,
       onClick.flatMap { _ =>
-        val author = Author.fromModelRecord(dataVar.now().last)
-        postAuthorStream(author)
+        model
+          .getDataItem(id)
+          .map(authorRecord => postAuthorStream(Author.fromModelRecord(authorRecord)))
+          .getOrElse(EventStream.fromValue(Left(Exception("Автор не найден"))))
       } --> {
         case Left(err: Throwable)  =>
           dom.window.alert(err.getMessage)
         case Right(author: Author) =>
-          updateLastDataItem(author.toModelRecord)
-          activeButtonVar.set(ActiveButton.ADD)
+          model.updateDataItem(id, author.toModelRecord)
       }
     )
 
-  private def disabledSaveButton: Button =
+  /** [[EventStream]] обновления автора.
+    *
+    * @param author
+    *   автор
+    */
+  private def putAuthorStream(author: Author): EventStream[Either[Throwable, Author]] =
+    Misc.getJwt
+      .map(jwt => EventStream.fromFuture(httpClient.put[Author, Author](url, jwt, author)))
+      .getOrElse(EventStream.fromValue(Left(Exception("Необходима аутентификация"))))
+  end putAuthorStream
+
+  /** Рендер кнопки обновления автора.
+    *
+    * @param id
+    *   уникальный идентификатор автора
+    * @param storedSignal
+    *   сигнал свойства "Автор сохранён"
+    */
+  private def renderUpdateButton(
+      id: UUID,
+      storedSignal: Signal[Boolean]
+  ): Button =
     button(
-      "Сохранить",
-      disabled := true
+      "Изменить",
+      disabled <-- storedSignal.map(!_),
+      onClick.flatMap { _ =>
+        model
+          .getDataItem(id)
+          .map(authorRecord => putAuthorStream(Author.fromModelRecord(authorRecord)))
+          .getOrElse(EventStream.fromValue(Left(Exception("Автор не найден"))))
+      } --> {
+        case Left(err: Throwable)  =>
+          dom.window.alert(err.getMessage)
+        case Right(author: Author) =>
+          model.updateDataItem(id, author.toModelRecord)
+      }
+    )
+
+  /** [[EventStream]] удаления автора.
+    *
+    * @param id
+    *   уникальный идентификатор автора
+    */
+  private def deleteAuthorStream(id: UUID): EventStream[Option[Throwable]] =
+    val urlSlashId = url + "/" + id.toString
+    Misc.getJwt
+      .map(jwt => EventStream.fromFuture(httpClient.delete(urlSlashId, jwt)))
+      .getOrElse(EventStream.fromValue(Some(Exception("Необходима аутентификация"))))
+  end deleteAuthorStream
+
+  /** Рендер кнопки удаления автора.
+    *
+    * @param id
+    *   уникальный идентификатор автора
+    * @param storedSignal
+    *   сигнал свойства "Автор сохранён"
+    */
+  private def renderDeleteButton(
+      id: UUID,
+      storedSignal: Signal[Boolean]
+  ): Button =
+    button(
+      "Удалить",
+      onClick.flatMap { _ =>
+        storedSignal.flatMapSwitch {
+          case true  => deleteAuthorStream(id)
+          case false => EventStream.fromValue(None) // Просто удалить из таблицы, если автор не сохранён
+        }
+      } --> {
+        case Some(err: Throwable) => dom.window.alert(err.getMessage)
+        case _                    => model.removeDataItem(id)
+      }
     )
 
 end AuthorsView

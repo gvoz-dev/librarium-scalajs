@@ -2,35 +2,31 @@ package libra.views
 
 import com.raquo.laminar.api.L.{*, given}
 import com.raquo.laminar.nodes.ReactiveHtmlElement
-import libra.Pages.CreateBookPage
-import libra.Routes.router
+import libra.Pages.*
+import libra.Routes.*
 import libra.entities.Book
 import libra.http.HttpClient
 import libra.models.BooksModel
 import libra.models.BooksModel.BookRecord
+import libra.utils.Misc
 import org.scalajs.dom
 import org.scalajs.dom.HTMLButtonElement
 
 import java.util.UUID
 import scala.concurrent.*
 
-case class BooksView()(using ExecutionContext) extends View:
+/** Представление страницы книг. */
+class BooksView(using ExecutionContext) extends View:
 
   private val httpClient = HttpClient()
   private val url        = libra.App.apiPath + "/books"
   private val model      = new BooksModel
 
-  import model.*
-
+  /** [[EventStream]] получения списка книг. */
   private val getBooksStream: EventStream[Either[Throwable, List[Book]]] =
     EventStream.fromFuture(httpClient.get[List[Book]](url))
 
-  private def deleteBookStream(id: UUID): EventStream[Option[Throwable]] =
-    val urlWithId = url + "/" + id.toString
-    val jwt       = dom.window.localStorage.getItem("jwt")
-    EventStream.fromFuture(httpClient.delete(urlWithId, jwt))
-  end deleteBookStream
-
+  /** Рендер страницы книг. */
   override def render: HtmlElement =
     div(
       cls := "container",
@@ -38,16 +34,17 @@ case class BooksView()(using ExecutionContext) extends View:
         child <-- getBooksStream.splitEither(
           (err, _) => div(s"Ошибка загрузки страницы: $err"),
           (authors, _) =>
-            init(authors.map(_.toModelRecord))
+            model.init(authors.map(_.toModelRecord))
             div(
-              renderDataTable,
+              renderBooksTable,
               renderCreateBookButton
             )
         )
       )
     )
 
-  private def renderDataTable: Element =
+  /** Рендер таблицы книг. */
+  private def renderBooksTable: Element =
     table(
       thead(
         tr(
@@ -61,93 +58,80 @@ case class BooksView()(using ExecutionContext) extends View:
         )
       ),
       tbody(
-        children <-- dataSignal.split(_.id) { (id, _, itemSignal) =>
-          renderDataItem(id, itemSignal)
+        children <-- model.dataSignal.split(_.id) { (id, _, itemSignal) =>
+          renderBook(id, itemSignal)
         }
       )
     )
 
-  private def renderDataItem(
+  /** Рендер книги как элемента таблицы. */
+  private def renderBook(
       id: UUID,
       itemSignal: Signal[BookRecord]
   ): Element =
-    import com.raquo.laminar.api.features.unitArrows
     tr(
-      td(
-        input(
-          cls      := "input input-books",
-          typ      := "text",
-          readOnly := true,
-          value <-- itemSignal.map(_.title)
-        )
-      ),
-      td(
-        input(
-          cls      := "input input-books",
-          typ      := "text",
-          readOnly := true,
-          value <-- itemSignal.map(_.author.name)
-        )
-      ),
-      td(
-        input(
-          cls      := "input input-books",
-          typ      := "text",
-          readOnly := true,
-          value <-- itemSignal.map(_.description)
-        )
-      ),
-      td(
-        input(
-          cls      := "input input-books",
-          typ      := "text",
-          readOnly := true,
-          value <-- itemSignal.map(_.isbn)
-        )
-      ),
-      td(
-        input(
-          cls      := "input input-books",
-          typ      := "text",
-          readOnly := true,
-          value <-- itemSignal.map(_.isbn13)
-        )
-      ),
-      td(
-        input(
-          cls      := "input input-books",
-          typ      := "text",
-          readOnly := true,
-          value <-- itemSignal.map(_.publisher.name)
-        )
-      ),
-      td(
-        input(
-          cls      := "input input-books",
-          typ      := "text",
-          readOnly := true,
-          value <-- itemSignal.map(_.year.toString)
-        )
-      ),
-      td(
-        button(
-          cls := "button button-books-red",
-          "Удалить",
-          onClick.flatMap(_ => deleteBookStream(id)) --> {
-            case Some(err: Throwable) => dom.window.alert(err.getMessage)
-            case _                    => removeDataItem(id)
-          }
-        )
-      ),
-      td(
-        button(
-          cls := "button button-books-green",
-          "Изменить",
-          onClick --> { dom.window.alert("Функция не реализована") }
-        )
-      )
+      td(renderReadOnlyInput(itemSignal.map(_.title))),
+      td(renderReadOnlyInput(itemSignal.map(_.author.name))),
+      td(renderReadOnlyInput(itemSignal.map(_.description))),
+      td(renderReadOnlyInput(itemSignal.map(_.isbn))),
+      td(renderReadOnlyInput(itemSignal.map(_.isbn13))),
+      td(renderReadOnlyInput(itemSignal.map(_.publisher.name))),
+      td(renderReadOnlyInput(itemSignal.map(_.year))),
+      td(renderDeleteBookButton(id)),
+      td(renderUpdateBookButton(id))
     )
 
+  /** Рендер поля ввода для строк (только для чтения). */
+  private def renderReadOnlyInput(valueSignal: Signal[String]): Input =
+    input(
+      cls      := "input input-books",
+      readOnly := true,
+      value <-- valueSignal
+    )
+
+  /** [[EventStream]] удаления книги.
+    *
+    * @param id
+    *   уникальный идентификатор книги
+    */
+  private def deleteBookStream(id: UUID): EventStream[Option[Throwable]] =
+    val urlSlashId = url + "/" + id.toString
+    Misc.getJwt
+      .map(jwt => EventStream.fromFuture(httpClient.delete(urlSlashId, jwt)))
+      .getOrElse(EventStream.fromValue(Some(Exception("Необходима аутентификация"))))
+  end deleteBookStream
+
+  /** Рендер кнопки удаления книги.
+    *
+    * @param id
+    *   уникальный идентификатор книги
+    */
+  private def renderDeleteBookButton(id: UUID): Button =
+    button(
+      cls := "button button-books-red",
+      "Удалить",
+      onClick.flatMapTo(deleteBookStream(id)) --> {
+        case Some(err: Throwable) => dom.window.alert(err.getMessage)
+        case _                    => model.removeDataItem(id)
+      }
+    )
+
+  /** Рендер кнопки изменения книги.
+    *
+    * @param id
+    *   уникальный идентификатор книги
+    */
+  private def renderUpdateBookButton(id: UUID): Button =
+    import com.raquo.laminar.api.features.unitArrows
+    button(
+      cls := "button button-books-green",
+      "Изменить",
+      onClick --> {
+        dom.window.alert("Функция не реализована")
+      }
+    )
+
+  /** Рендер кнопки создания (добавления) книги. */
   private def renderCreateBookButton: HtmlElement =
     import com.raquo.laminar.api.features.unitArrows
     div(
